@@ -1,30 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PREZZY MDX SESSION</title>
+  <title>PREZZY MDX</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-<div class="loader" id="loader">
-  <h2>🔥 PREZZY MDX 🔥</h2>
-  <p>Building session system... please wait</p>
-</div>
-
-<div class="container hidden" id="main">
-  <h1>PREZZY MDX SESSION</h1>
+<div class="container">
+  <h1>🔥 PREZZY MDX SESSION 🔥</h1>
   <p>Select an option</p>
 
-  <button onclick="location.href='/qr'">QR CODE</button>
+  <button onclick="location.href='/qr-page'">QR CODE</button>
   <button onclick="location.href='/pair'">PAIR CODE</button>
 </div>
-
-<script>
-  setTimeout(() => {
-    document.getElementById("loader").classList.add("hidden")
-    document.getElementById("main").classList.remove("hidden")
-  }, 2500)
-</script>
 
 </body>
 </html>
