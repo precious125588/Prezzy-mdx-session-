@@ -1,7 +1,6 @@
 {
   "name": "prezzy-session",
   "version": "1.0.0",
-  "description": "PREZZY MDX Session Generator",
   "main": "index.js",
   "type": "module",
   "scripts": {
