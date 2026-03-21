@@ -8,46 +8,40 @@ import QRCode from "qrcode"
 const app = express()
 const PORT = process.env.PORT || 3000
 
+app.use(express.static("public"))
 app.use(express.urlencoded({ extended: true }))
 
 let qrImage = ""
 let pairingCode = ""
 let phoneNumber = ""
 
-// 🔥 HOME PAGE
+// 🔥 ROUTES (ONLY ONCE — NO DUPLICATE)
+
+// Home
 app.get("/", (req, res) => {
-  res.send(`
-    <h1>🔥 PREZZY MDX SESSION 🔥</h1>
-    <a href="/qr">Generate QR Code</a><br><br>
-    <a href="/pair">Generate Pairing Code</a>
-  `)
+  res.sendFile(process.cwd() + "/public/index.html")
 })
 
-// 📷 QR PAGE
-app.get("/qr", (req, res) => {
-  res.send(`
-    <h2>Scan QR Code</h2>
-    ${qrImage ? `<img src="${qrImage}" width="300"/>` : "Loading QR... refresh"}
-    <br><br>
-    <a href="/">Back</a>
-  `)
+// QR page
+app.get("/qr-page", (req, res) => {
+  res.sendFile(process.cwd() + "/public/qr.html")
 })
 
-// 🔢 PAIR PAGE (FORM)
+// Pair page
 app.get("/pair", (req, res) => {
-  res.send(`
-    <h2>Enter Number</h2>
-    <form action="/pair" method="POST">
-      <input name="number" placeholder="234XXXXXXXXXX" required />
-      <button type="submit">Get Code</button>
-    </form>
-    <br>
-    <a href="/">Back</a>
-  `)
+  res.sendFile(process.cwd() + "/public/pair.html")
 })
 
-// 🔥 HANDLE PAIR REQUEST
-app.post("/pair", async (req, res) => {
+// Serve QR image
+app.get("/qr", (req, res) => {
+  if (!qrImage) return res.send("QR not ready")
+  const img = qrImage.split(",")[1]
+  res.writeHead(200, { "Content-Type": "image/png" })
+  res.end(Buffer.from(img, "base64"))
+})
+
+// Handle pairing form
+app.post("/pair", (req, res) => {
   phoneNumber = req.body.number
 
   res.send(`
@@ -58,6 +52,7 @@ app.post("/pair", async (req, res) => {
   `)
 })
 
+// 🔥 WHATSAPP CONNECTION
 async function startSock() {
   const { state, saveCreds } = await useMultiFileAuthState("auth")
   const { version } = await fetchLatestBaileysVersion()
@@ -97,7 +92,7 @@ async function startSock() {
   sock.ev.on("creds.update", saveCreds)
 }
 
-// delay start (important for Render)
+// Delay start (important for Render)
 setTimeout(() => {
   startSock()
 }, 3000)
