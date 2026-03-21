@@ -1,27 +1,60 @@
 import express from "express"
 import makeWASocket, {
   useMultiFileAuthState,
-  fetchLatestBaileysVersion,
-  DisconnectReason
+  fetchLatestBaileysVersion
 } from "@whiskeysockets/baileys"
 import QRCode from "qrcode"
 
 const app = express()
 const PORT = process.env.PORT || 3000
 
+app.use(express.urlencoded({ extended: true }))
+
 let qrImage = ""
 let pairingCode = ""
+let phoneNumber = ""
 
-// Web page
+// 🔥 HOME PAGE
 app.get("/", (req, res) => {
   res.send(`
-    <h2>🔥 PREZZY MDX SESSION 🔥</h2>
+    <h1>🔥 PREZZY MDX SESSION 🔥</h1>
+    <a href="/qr">Generate QR Code</a><br><br>
+    <a href="/pair">Generate Pairing Code</a>
+  `)
+})
 
-    <h3>Pairing Code:</h3>
-    <p>${pairingCode || "Waiting..."}</p>
+// 📷 QR PAGE
+app.get("/qr", (req, res) => {
+  res.send(`
+    <h2>Scan QR Code</h2>
+    ${qrImage ? `<img src="${qrImage}" width="300"/>` : "Loading QR... refresh"}
+    <br><br>
+    <a href="/">Back</a>
+  `)
+})
 
-    <h3>QR Code:</h3>
-    ${qrImage ? `<img src="${qrImage}" width="300"/>` : "Waiting for QR..."}
+// 🔢 PAIR PAGE (FORM)
+app.get("/pair", (req, res) => {
+  res.send(`
+    <h2>Enter Number</h2>
+    <form action="/pair" method="POST">
+      <input name="number" placeholder="234XXXXXXXXXX" required />
+      <button type="submit">Get Code</button>
+    </form>
+    <br>
+    <a href="/">Back</a>
+  `)
+})
+
+// 🔥 HANDLE PAIR REQUEST
+app.post("/pair", async (req, res) => {
+  phoneNumber = req.body.number
+
+  res.send(`
+    <h2>Your Pairing Code</h2>
+    <p>${pairingCode || "Generating... refresh"}</p>
+    <br><br>
+    <a href="/">Back</a>
   `)
 })
 
@@ -37,46 +70,37 @@ async function startSock() {
   })
 
   sock.ev.on("connection.update", async (update) => {
-    const { connection, lastDisconnect, qr } = update
+    const { connection, qr } = update
 
     // QR
     if (qr) {
       qrImage = await QRCode.toDataURL(qr)
-      console.log("QR Generated")
+      console.log("QR Ready")
     }
 
-    // Pairing Code (SAFE)
-    if (!sock.authState.creds.registered) {
+    // Pairing
+    if (connection === "connecting" && phoneNumber) {
       try {
-        const code = await sock.requestPairingCode("2349068551055")
+        const code = await sock.requestPairingCode(phoneNumber)
         pairingCode = code
         console.log("Pairing Code:", code)
-      } catch (err) {
-        console.log("Pairing error:", err.message)
-      }
-    }
-
-    // Reconnect if closed
-    if (connection === "close") {
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
-
-      console.log("Connection closed. Reconnecting:", shouldReconnect)
-
-      if (shouldReconnect) {
-        startSock()
+      } catch (e) {
+        console.log("Pairing error:", e.message)
       }
     }
 
     if (connection === "open") {
-      console.log("Connected successfully ✅")
+      console.log("Connected ✅")
     }
   })
 
   sock.ev.on("creds.update", saveCreds)
 }
 
-startSock()
+// delay start (important for Render)
+setTimeout(() => {
+  startSock()
+}, 3000)
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT)
