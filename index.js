@@ -1,4 +1,5 @@
 import express from "express"
+import path from "path"
 import makeWASocket, {
   useMultiFileAuthState,
   fetchLatestBaileysVersion
@@ -8,29 +9,33 @@ import QRCode from "qrcode"
 const app = express()
 const PORT = process.env.PORT || 3000
 
-app.use(express.static("public"))
+const __dirname = process.cwd()
+
+app.use(express.static(path.join(__dirname, "public")))
 app.use(express.urlencoded({ extended: true }))
 
 let qrImage = ""
 let pairingCode = ""
 let phoneNumber = ""
 
-// HOME PAGE
+// 🔥 ROUTES
+
+// Home
 app.get("/", (req, res) => {
-  res.sendFile(process.cwd() + "/public/index.html")
+  res.sendFile(path.join(__dirname, "public", "index.html"))
 })
 
-// QR PAGE (UI)
+// QR Page
 app.get("/qr-page", (req, res) => {
-  res.sendFile(process.cwd() + "/public/qr.html")
+  res.sendFile(path.join(__dirname, "public", "qr.html"))
 })
 
-// PAIR PAGE (UI)
+// Pair Page
 app.get("/pair", (req, res) => {
-  res.sendFile(process.cwd() + "/public/pair.html")
+  res.sendFile(path.join(__dirname, "public", "pair.html"))
 })
 
-// QR IMAGE (IMPORTANT)
+// QR IMAGE
 app.get("/qr", (req, res) => {
   if (!qrImage) return res.send("QR not ready")
   const img = qrImage.split(",")[1]
@@ -50,7 +55,7 @@ app.post("/pair", (req, res) => {
   `)
 })
 
-// WHATSAPP CONNECTION
+// 🔥 WHATSAPP CONNECTION
 async function startSock() {
   const { state, saveCreds } = await useMultiFileAuthState("auth")
   const { version } = await fetchLatestBaileysVersion()
@@ -90,11 +95,12 @@ async function startSock() {
   sock.ev.on("creds.update", saveCreds)
 }
 
-// DELAY START (VERY IMPORTANT FOR RENDER)
+// 🔥 DELAY START (IMPORTANT FOR RENDER)
 setTimeout(() => {
   startSock()
 }, 3000)
 
+// START SERVER
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT)
 })
